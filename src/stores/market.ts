@@ -3,18 +3,19 @@ import { ref, computed } from 'vue'
 import api from '../services/api'
 import ImageCache from '../services/imageCache'
 import { enrichTrackData } from '../utils/marketSimulator'
+import { EnrichedTrack, LastFmTrack } from '../types'
 
 export const useMarketStore = defineStore('market', () => {
-    const assets = ref([])
+    const assets = ref<EnrichedTrack[]>([])
     const isLoading = ref(false)
-    const error = ref(null)
+    const error = ref<string | null>(null)
 
     const fetchMarket = async () => {
         isLoading.value = true
         error.value = null
         try {
             const response = await api.getTopTracks()
-            const rawTracks = response.data.tracks.track || []
+            const rawTracks: LastFmTrack[] = response.data.tracks.track || []
 
             // console.log('DEBUG: Top Tracks Raw:', rawTracks[0]);
 
@@ -32,7 +33,7 @@ export const useMarketStore = defineStore('market', () => {
             // Progressive Image Loading
             fetchImagesForTopTracks()
 
-        } catch (err) {
+        } catch (err: any) {
             console.error('Market fetch failed:', err)
             error.value = err.message || 'Failed to fetch market data'
         } finally {
@@ -74,7 +75,7 @@ export const useMarketStore = defineStore('market', () => {
         }
     }
 
-    const portfolio = ref([])
+    const portfolio = ref<EnrichedTrack[]>([])
 
     // Initialize: Load from localStorage
     const loadPortfolio = () => {
@@ -89,14 +90,14 @@ export const useMarketStore = defineStore('market', () => {
         localStorage.setItem('soundstock-portfolio', JSON.stringify(portfolio.value))
     }
 
-    const addToPortfolio = (track) => {
+    const addToPortfolio = (track: EnrichedTrack) => {
         if (!isInPortfolio(track)) {
             portfolio.value.push(track)
             savePortfolio()
         }
     }
 
-    const removeFromPortfolio = (track) => {
+    const removeFromPortfolio = (track: EnrichedTrack) => {
         const index = portfolio.value.findIndex(item => item.name === track.name && item.artist === track.artist)
         if (index !== -1) {
             portfolio.value.splice(index, 1)
@@ -104,7 +105,7 @@ export const useMarketStore = defineStore('market', () => {
         }
     }
 
-    const isInPortfolio = (track) => {
+    const isInPortfolio = (track: EnrichedTrack) => {
         return portfolio.value.some(item => item.name === track.name && item.artist === track.artist)
     }
 

@@ -1,9 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../services/api'
 import ImageCache from '../../services/imageCache'
 import { enrichTrackData } from '../../utils/marketSimulator'
+import { EnrichedTrack, LastFmTrack } from '../../types'
 
 const props = defineProps({
   isOpen: Boolean
@@ -13,10 +14,10 @@ const emit = defineEmits(['close'])
 const router = useRouter()
 
 const query = ref('')
-const results = ref([])
+const results = ref<EnrichedTrack[]>([])
 const isLoading = ref(false)
-const inputRef = ref(null)
-let debounceTimeout = null
+const inputRef = ref<HTMLInputElement | null>(null)
+let debounceTimeout: ReturnType<typeof setTimeout> | null = null
 
 // Focus input when opened
 watch(() => props.isOpen, async (val) => {
@@ -43,10 +44,14 @@ watch(query, (newVal) => {
   debounceTimeout = setTimeout(async () => {
     try {
       const response = await api.searchTracks(newVal)
-      const rawTracks = response.data.results.trackmatches.track || []
+      // Search API returns artist as string, but LastFmTrack interface allows it.
+      // Casting to any[] to avoid strict check on partial match before enrichment
+      const rawTracks = (response.data.results.trackmatches.track || []) as any[]
       
-      results.value = rawTracks.map(track => {
-          const enriched = enrichTrackData(track);
+      results.value = rawTracks.map((track) => {
+          // Ensure structure matches what enrichTrackData expects (mostly it does)
+          const enriched = enrichTrackData(track as LastFmTrack);
+          
           // Apply cache immediately if available
           const cachedImage = ImageCache.get(enriched.artist, enriched.name);
           if (cachedImage) {
@@ -77,7 +82,8 @@ const fetchImagesForResults = async () => {
     if (ImageCache.has(track.artist, track.name)) continue;
 
     try {
-        let artistName = typeof track.artist === 'string' ? track.artist : track.artist.name;
+        // EnrichedTrack always has artist as string
+        const artistName = track.artist;
         
         const response = await api.getTrackInfo(artistName, track.name);
         const trackData = response.data.track;
@@ -100,17 +106,9 @@ const fetchImagesForResults = async () => {
   }
 }
 
-const handleSelect = (track) => {
-  // 1. Безопасно достаем имя артиста
-  let artistName = 'Unknown';
-  if (typeof track.artist === 'string') {
-    artistName = track.artist;
-  } else if (typeof track.artist === 'object' && track.artist !== null) {
-    artistName = track.artist.name || 'Unknown';
-  }
-
-  // 2. Безопасно достаем название трека
-  const trackName = track.name || 'Unknown Track';
+const handleSelect = (track: EnrichedTrack) => {
+  const artistName = track.artist;
+  const trackName = track.name;
 
   emit('close')
   
@@ -124,7 +122,7 @@ const handleSelect = (track) => {
 }
 
 // Close on escape
-const onKeydown = (e) => {
+const onKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && props.isOpen) {
     emit('close')
   }
@@ -174,7 +172,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
                     
                     <div class="ml-4 flex-auto">
                         <p class="font-bold text-white group-hover:text-indigo-400 transition-colors truncate">{{ track.name }}</p>
-                        <p class="text-slate-400 truncate">{{ typeof track.artist === 'string' ? track.artist : track.artist.name }}</p>
+                        <p class="text-slate-400 truncate">{{ track.artist }}</p>
                     </div>
                     
                     <div class="flex-none ml-2 text-right">

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import SearchModal from '../business/SearchModal.vue'
 
@@ -14,7 +14,7 @@ const openSearch = () => openSearchModal() // Keep for compatibility if needed o
 const closeSearch = () => isSearchOpen.value = false
 
 // Keyboard shortcut (Ctrl+Shift+K or Cmd+Shift+K)
-const onKeydown = (e) => {
+const onKeydown = (e: KeyboardEvent) => {
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'k' || e.key === 'K' || e.code === 'KeyK')) {
     e.preventDefault()
     openSearch()

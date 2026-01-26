@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted } from 'vue'
 import { useMarketStore } from '../stores/market'
 import TheHeader from '../components/ui/TheHeader.vue'
@@ -51,7 +51,7 @@ onMounted(() => {
 
          <!-- Mobile View -->
          <div class="md:hidden">
-            <MarketCard v-for="asset in marketStore.assets" :key="asset.id" :asset="asset" />
+            <MarketCard v-for="asset in marketStore.assets" :key="asset.artist + asset.name" :asset="asset" />
          </div>
       </div>
     </main>

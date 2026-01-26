@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useMarketStore } from '../stores/market'
 import { formatNumber } from '../utils/formatters'
@@ -49,7 +49,7 @@ const hasAssets = computed(() => marketStore.portfolio.length > 0)
             <MarketTable :assets="marketStore.portfolio" />
          </div>
          <div class="md:hidden">
-            <MarketCard v-for="asset in marketStore.portfolio" :key="asset.id" :asset="asset" />
+            <MarketCard v-for="asset in marketStore.portfolio" :key="asset.artist + asset.name" :asset="asset" />
          </div>
       </div>
 

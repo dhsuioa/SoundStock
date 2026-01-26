@@ -1,11 +1,13 @@
 const CACHE_KEY = 'soundstock-image-cache';
 
 class ImageCacheService {
+    private cache: Record<string, string>;
+
     constructor() {
         this.cache = this.load();
     }
 
-    load() {
+    load(): Record<string, string> {
         try {
             const stored = localStorage.getItem(CACHE_KEY);
             return stored ? JSON.parse(stored) : {};
@@ -15,7 +17,7 @@ class ImageCacheService {
         }
     }
 
-    save() {
+    save(): void {
         try {
             localStorage.setItem(CACHE_KEY, JSON.stringify(this.cache));
         } catch (e) {
@@ -23,23 +25,23 @@ class ImageCacheService {
         }
     }
 
-    getKey(artist, track) {
+    getKey(artist: string, track: string): string {
         return `${artist.toLowerCase()}|${track.toLowerCase()}`;
     }
 
-    get(artist, track) {
+    get(artist: string, track: string): string | null {
         const key = this.getKey(artist, track);
         return this.cache[key] || null;
     }
 
-    set(artist, track, url) {
+    set(artist: string, track: string, url: string): void {
         if (!url) return;
         const key = this.getKey(artist, track);
         this.cache[key] = url;
         this.save();
     }
 
-    has(artist, track) {
+    has(artist: string, track: string): boolean {
         return !!this.get(artist, track);
     }
 }

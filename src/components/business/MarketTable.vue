@@ -1,21 +1,18 @@
-<script setup>
-import { computed } from 'vue'
+<script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useMarketStore } from '../../stores/market'
 import { formatNumber, formatCompactNumber } from '../../utils/formatters'
+import { EnrichedTrack } from '../../types'
 
-const props = defineProps({
-  assets: {
-    type: Array,
-    required: true
-  }
-})
+const props = defineProps<{
+  assets: EnrichedTrack[]
+}>()
 
 const router = useRouter()
 const marketStore = useMarketStore()
-const getChangeClass = (val) => val > 0 ? 'text-emerald-400' : 'text-rose-400';
+const getChangeClass = (val: string) => parseFloat(val) > 0 ? 'text-emerald-400' : 'text-rose-400';
 
-const togglePortfolio = (event, asset) => {
+const togglePortfolio = (event: Event, asset: EnrichedTrack) => {
   event.stopPropagation(); // Prevent navigation to track details
   if (marketStore.isInPortfolio(asset)) {
     marketStore.removeFromPortfolio(asset);
@@ -24,24 +21,15 @@ const togglePortfolio = (event, asset) => {
   }
 };
 
-const goToTrack = (track) => {
-  // 1. Безопасно достаем имя артиста
-  let artistName = 'Unknown';
-
-  if (typeof track.artist === 'string') {
-    artistName = track.artist;
-  } else if (typeof track.artist === 'object' && track.artist !== null) {
-    artistName = track.artist.name || 'Unknown';
-  }
-
-  // 2. Безопасно достаем название трека
-  const trackName = track.name || 'Unknown Track';
+const goToTrack = (track: EnrichedTrack) => {
+  // Artist is already normalized to string in EnrichedTrack
+  const artistName = track.artist;
+  const trackName = track.name;
 
   console.log('Navigating to:', artistName, '-', trackName); // Лог для проверки
 
-  // 3. Переход
   router.push({
-    name: 'TrackDetails', // Current router config uses 'TrackDetails'
+    name: 'TrackDetails', 
     params: {
       artist: artistName,
       track: trackName
@@ -97,7 +85,7 @@ const goToTrack = (track) => {
             <td class="px-6 py-4 text-right font-mono" :class="getChangeClass(asset.change24h)">
                 <span v-if="asset.isPositive">▲</span>
                 <span v-else>▼</span>
-                {{ Math.abs(asset.change24h) }}%
+                {{ Math.abs(parseFloat(asset.change24h)) }}%
             </td>
 
             <!-- Volume -->

@@ -1,8 +1,6 @@
-/**
- * Generates fake financial market data for music tracks.
- */
+import { LastFmTrack, EnrichedTrack } from '../types';
 
-export const enrichTrackData = (track) => {
+export const enrichTrackData = (track: LastFmTrack): EnrichedTrack => {
     let imageUrl = '';
     const defaultImage = 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png';
 
@@ -37,14 +35,17 @@ export const enrichTrackData = (track) => {
         // console.log('Valid image found for:', track.name, imageUrl);
     }
 
+    // Normalize artist name
+    const artistName = typeof track.artist === 'string' ? track.artist : track.artist?.name || 'Unknown Artist';
+
     return {
         ...track,
         name: track.name,
-        artist: track.artist?.name || track.artist || 'Unknown Artist', // Artist бывает объектом или строкой
-        price: parseInt(track.playcount || track.listeners || 0), // В поиске playcount может не быть, берем listeners
-        volume: parseInt(track.listeners || 0),
+        artist: artistName,
+        price: parseInt(track.playcount || track.listeners || '0'),
+        volume: parseInt(track.listeners || '0'),
         change24h: (Math.random() * 10 - 5).toFixed(2),
         image: imageUrl,
         isPositive: Math.random() > 0.5
-    };
+    } as EnrichedTrack;
 };

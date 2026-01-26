@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMarketStore } from '../stores/market'
@@ -6,25 +6,33 @@ import api from '../services/api'
 import { enrichTrackData } from '../utils/marketSimulator'
 import { formatNumber } from '../utils/formatters'
 import TheHeader from '../components/ui/TheHeader.vue'
+import { EnrichedTrack } from '../types'
 
 const route = useRoute()
 const marketStore = useMarketStore()
 
-const track = ref(null)
+const track = ref<EnrichedTrack | null>(null)
 const isLoading = ref(true)
-const error = ref(null)
+const error = ref<string | null>(null)
 
 const fetchTrackDetails = async () => {
     isLoading.value = true
     error.value = null
     try {
-        const response = await api.getTrackInfo(route.params.artist, route.params.track)
+        const artistParam = Array.isArray(route.params.artist) ? route.params.artist[0] : route.params.artist;
+        const trackParam = Array.isArray(route.params.track) ? route.params.track[0] : route.params.track;
+
+        if (!artistParam || !trackParam) {
+             throw new Error("Invalid parameters");
+        }
+
+        const response = await api.getTrackInfo(artistParam, trackParam)
         if (response.data.track) {
             track.value = enrichTrackData(response.data.track)
         } else {
             error.value = "Track not found"
         }
-    } catch (err) {
+    } catch (err: any) {
         error.value = err.message || "Failed to load track details"
     } finally {
         isLoading.value = false
@@ -46,19 +54,26 @@ const isOwned = computed(() => {
 })
 
 const togglePortfolio = () => {
-    if (isOwned.value) {
-        marketStore.removeFromPortfolio(track.value)
-    } else {
-        marketStore.addToPortfolio(track.value)
+    if (track.value) {
+        if (isOwned.value) {
+            marketStore.removeFromPortfolio(track.value)
+        } else {
+            marketStore.addToPortfolio(track.value)
+        }
     }
 }
 
 // Duration formatter (ms to mm:ss)
-const formatDuration = (ms) => {
-    if (!ms) return '-'
+const formatDuration = (durationStr?: string) => {
+    if (!durationStr) return '-'
+    const ms = parseInt(durationStr);
+    if (isNaN(ms)) return '-';
+    
     const minutes = Math.floor(ms / 60000)
     const seconds = ((ms % 60000) / 1000).toFixed(0)
-    return minutes + ":" + (seconds < 10 ? '0' : '') + seconds
+    // Fix type error for comparison: parseInt(seconds) or explicit conversion
+    const secondsNum = parseInt(seconds);
+    return minutes + ":" + (secondsNum < 10 ? '0' : '') + seconds
 }
 </script>
 
@@ -80,7 +95,7 @@ const formatDuration = (ms) => {
             <router-link to="/" class="text-indigo-400 hover:underline mt-4 inline-block">Вернуться на главную</router-link>
         </div>
 
-        <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div v-else-if="track" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Left Column: Visual & Primary Info -->
             <div class="lg:col-span-1 space-y-6">
                 <!-- Cover Art -->

@@ -21,7 +21,7 @@ api.interceptors.response.use(response => {
     return Promise.reject(error);
 });
 
-export const getTopTracks = (limit = 50) => {
+export const getTopTracks = (limit: number = 50) => {
     return api.get('', {
         params: {
             method: 'chart.gettoptracks',
@@ -30,7 +30,7 @@ export const getTopTracks = (limit = 50) => {
     });
 };
 
-export const getTrackInfo = (artist, track) => {
+export const getTrackInfo = (artist: string, track: string) => {
     return api.get('', {
         params: {
             method: 'track.getInfo',
@@ -40,7 +40,7 @@ export const getTrackInfo = (artist, track) => {
     });
 };
 
-export const searchTracks = (query, limit = 10) => {
+export const searchTracks = (query: string, limit: number = 10) => {
     return api.get('', {
         params: {
             method: 'track.search',

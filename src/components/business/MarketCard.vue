@@ -1,28 +1,20 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { formatNumber } from '../../utils/formatters'
+import { EnrichedTrack } from '../../types'
 
-const props = defineProps({
-  asset: {
-    type: Object,
-    required: true
-  }
-})
+const props = defineProps<{
+  asset: EnrichedTrack
+}>()
 
 const router = useRouter()
 const changeClass = computed(() => props.asset.isPositive ? 'text-emerald-400' : 'text-rose-400')
 const changeSign = computed(() => props.asset.isPositive ? '+' : '')
 
-const goToTrack = (track) => {
-  let artistName = 'Unknown';
-  if (typeof track.artist === 'string') {
-    artistName = track.artist;
-  } else if (typeof track.artist === 'object' && track.artist !== null) {
-    artistName = track.artist.name || 'Unknown';
-  }
-
-  const trackName = track.name || 'Unknown Track';
+const goToTrack = (track: EnrichedTrack) => {
+  const artistName = track.artist;
+  const trackName = track.name;
 
   router.push({
     name: 'TrackDetails',
@@ -48,7 +40,7 @@ const goToTrack = (track) => {
         <!-- Info -->
         <div class="min-w-0">
             <h3 class="text-white font-bold text-sm truncate leading-tight">{{ asset.name }}</h3>
-            <p class="text-slate-400 text-xs truncate">{{ asset.artist.name }}</p>
+            <p class="text-slate-400 text-xs truncate">{{ asset.artist }}</p>
         </div>
     </div>
 

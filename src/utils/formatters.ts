@@ -3,7 +3,7 @@
  * @param {number} num 
  * @returns {string} e.g. "1,234,567"
  */
-export const formatNumber = (num) => {
+export const formatNumber = (num: number): string => {
     if (num === null || num === undefined) return '-';
     return new Intl.NumberFormat('en-US').format(num);
 }
@@ -14,7 +14,7 @@ export const formatNumber = (num) => {
  * @param {number} num 
  * @returns {string} e.g. "1.2M", "500K"
  */
-export const formatCompactNumber = (num) => {
+export const formatCompactNumber = (num: number): string => {
     if (num === null || num === undefined) return '-';
     return new Intl.NumberFormat('en-US', {
         notation: "compact",
@@ -25,6 +25,6 @@ export const formatCompactNumber = (num) => {
 /**
  * Formats data for the UI
  */
-export const formatCurrency = (num) => {
+export const formatCurrency = (num: number): string => {
     return formatNumber(num);
 }
