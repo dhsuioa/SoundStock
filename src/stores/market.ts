@@ -1,9 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '../services/api'
+import backendApi from '../services/backend'
 import ImageCache from '../services/imageCache'
 import { enrichTrackData } from '../utils/marketSimulator'
 import { EnrichedTrack, LastFmTrack } from '../types'
+import { useAuthStore } from './auth'
+import router from '../router'
 
 export const useMarketStore = defineStore('market', () => {
     const assets = ref<EnrichedTrack[]>([])
@@ -76,57 +79,102 @@ export const useMarketStore = defineStore('market', () => {
     }
 
     const portfolio = ref<EnrichedTrack[]>([])
+    const authStore = useAuthStore()
+    const portfolioValue = computed(() => {
+        return portfolio.value.reduce((sum, t) => sum + (t.price || 0), 0)
+    })
 
-    // Initialize: Load from localStorage
-    const loadPortfolio = () => {
-        const stored = localStorage.getItem('soundstock-portfolio')
-        if (stored) {
-            portfolio.value = JSON.parse(stored)
+    // Initialize: Load from Backend
+    const loadPortfolio = async () => {
+        if (!authStore.isAuthenticated) return;
+        
+        try {
+            const response = await backendApi.getPortfolio();
+            const items = response.data || [];
+            const enrichedItems: EnrichedTrack[] = await Promise.all(items.map(async (item: any) => {
+                try {
+                    const info = await api.getTrackInfo(item.artist_name, item.track_name);
+                    const base = enrichTrackData(info.data.track);
+                    base.image = item.image_url || base.image;
+                    base.mbid = item.mbid || base.mbid;
+                    return base;
+                } catch {
+                    return {
+                        name: item.track_name,
+                        artist: item.artist_name,
+                        image: item.image_url,
+                        price: 0,
+                        volume: 0,
+                        change24h: '0.00',
+                        isPositive: true,
+                        mbid: item.mbid
+                    } as EnrichedTrack;
+                }
+            }));
+            portfolio.value = enrichedItems;
+        } catch (err: any) {
+            console.error('Failed to load portfolio:', err);
+            if (err.response && err.response.status === 401) {
+                authStore.logout();
+            }
         }
     }
 
-    // Persist helper
-    const savePortfolio = () => {
-        localStorage.setItem('soundstock-portfolio', JSON.stringify(portfolio.value))
-    }
+    const addToPortfolio = async (track: EnrichedTrack) => {
+        if (!authStore.isAuthenticated) {
+            router.push('/auth');
+            return;
+        }
 
-    const addToPortfolio = (track: EnrichedTrack) => {
         if (!isInPortfolio(track)) {
-            portfolio.value.push(track)
-            savePortfolio()
+            try {
+                await backendApi.addToPortfolio({
+                    artist_name: track.artist,
+                    track_name: track.name,
+                    image_url: track.image,
+                    mbid: (track as any).mbid
+                });
+                portfolio.value.push(track);
+            } catch (err: any) {
+                console.error('Failed to add to portfolio:', err);
+                if (err.response && err.response.status === 401) {
+                    authStore.logout();
+                }
+            }
         }
     }
 
-    const removeFromPortfolio = (track: EnrichedTrack) => {
-        const index = portfolio.value.findIndex(item => item.name === track.name && item.artist === track.artist)
-        if (index !== -1) {
-            portfolio.value.splice(index, 1)
-            savePortfolio()
+    const removeFromPortfolio = async (track: EnrichedTrack) => {
+        if (!authStore.isAuthenticated) {
+            router.push('/auth');
+            return;
+        }
+
+        try {
+            await backendApi.removeFromPortfolio(track.name);
+            portfolio.value = portfolio.value.filter(t => t.name !== track.name || t.artist !== track.artist);
+        } catch (err: any) {
+            console.error('Failed to remove from portfolio:', err);
+             if (err.response && err.response.status === 401) {
+                authStore.logout();
+            }
         }
     }
 
     const isInPortfolio = (track: EnrichedTrack) => {
-        return portfolio.value.some(item => item.name === track.name && item.artist === track.artist)
+        return portfolio.value.some(t => t.name === track.name && t.artist === track.artist)
     }
-
-    // Getters (Computed in Script Setup store)
-    const portfolioValue = computed(() => {
-        return portfolio.value.reduce((total, item) => total + (item.price || 0), 0)
-    })
-
-    // Load on init
-    loadPortfolio()
 
     return {
         assets,
+        portfolio,
+        portfolioValue,
         isLoading,
         error,
         fetchMarket,
-        // Portfolio
-        portfolio,
+        loadPortfolio,
         addToPortfolio,
         removeFromPortfolio,
-        isInPortfolio,
-        portfolioValue
+        isInPortfolio
     }
 })

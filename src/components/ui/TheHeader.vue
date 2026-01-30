@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useAuthStore } from '../../stores/auth'
 import SearchModal from '../business/SearchModal.vue'
-
+ 
 const isSearchOpen = ref(false)
+const authStore = useAuthStore()
 
 const openSearchModal = () => {
-  console.log('SEARCH CLICKED! Current state:', isSearchOpen.value);
   isSearchOpen.value = true;
-  console.log('New state:', isSearchOpen.value);
 };
 
 const openSearch = () => openSearchModal() // Keep for compatibility if needed or replace usages
@@ -23,6 +23,10 @@ const onKeydown = (e: KeyboardEvent) => {
 
 onMounted(() => document.addEventListener('keydown', onKeydown))
 onUnmounted(() => document.removeEventListener('keydown', onKeydown))
+
+const handleLogout = () => {
+  authStore.logout()
+}
 </script>
 
 <template>
@@ -59,9 +63,25 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 
       <!-- Actions -->
       <div class="flex items-center space-x-4">
-        <router-link to="/portfolio" class="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors">
+        <router-link v-if="authStore.isAuthenticated" to="/portfolio" class="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
             <span class="hidden sm:block font-medium">Портфель</span>
+         </router-link>
+
+        <div v-if="authStore.isAuthenticated" class="flex items-center space-x-3">
+            <div class="hidden sm:flex items-center space-x-2 bg-slate-800 border border-slate-700 rounded-full px-3 py-1">
+                <div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
+                    {{ (authStore.user?.email || 'U').slice(0,1).toUpperCase() }}
+                </div>
+                <span class="text-slate-300 text-sm">{{ authStore.user?.email }}</span>
+            </div>
+            <button @click="handleLogout" class="text-slate-400 hover:text-white text-sm font-medium transition-colors">
+                Выйти
+            </button>
+        </div>
+        
+        <router-link v-else to="/auth" class="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+            Войти
         </router-link>
       </div>
     </div>

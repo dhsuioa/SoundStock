@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useMarketStore } from '../stores/market'
 import { formatNumber } from '../utils/formatters'
 import TheHeader from '../components/ui/TheHeader.vue'
@@ -10,6 +10,10 @@ const marketStore = useMarketStore()
 
 const portfolioValue = computed(() => marketStore.portfolioValue)
 const hasAssets = computed(() => marketStore.portfolio.length > 0)
+
+onMounted(() => {
+  marketStore.loadPortfolio()
+})
 </script>
 
 <template>
