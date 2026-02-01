@@ -10,7 +10,9 @@ from . import models, schemas, database
 import os
 
 # Конфигурация JWT
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-it")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is not set in environment")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

@@ -23,6 +23,19 @@ const routes: RouteRecordRaw[] = [
         name: 'Auth',
         component: () => import('../pages/AuthPage.vue')
     }
+    ,
+    {
+        path: '/profile',
+        name: 'Profile',
+        component: () => import('../pages/ProfilePage.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/leaderboard',
+        name: 'Leaderboard',
+        component: () => import('../pages/LeaderboardPage.vue'),
+        meta: { requiresAuth: true }
+    }
 ]
 
 const router = createRouter({
@@ -30,7 +43,7 @@ const router = createRouter({
     routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
     const authStore = useAuthStore()
     
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {

@@ -4,9 +4,10 @@ import backendApi from '../services/backend';
 import router from '../router';
 
 export const useAuthStore = defineStore('auth', () => {
-    const user = ref<{ email: string } | null>(null);
+    const user = ref<{ email: string; display_name?: string | null; avatar_url?: string | null; balance?: number } | null>(null);
     const token = ref<string | null>(localStorage.getItem('token'));
     const error = ref<string | null>(null);
+    const lastBalanceChange = ref<null | 'increase' | 'decrease'>(null);
 
     const isAuthenticated = computed(() => !!token.value);
 
@@ -30,6 +31,21 @@ export const useAuthStore = defineStore('auth', () => {
     if (token.value) {
         const email = decodeEmail(token.value);
         if (email) user.value = { email };
+        refreshUser().catch(() => {});
+    }
+
+    async function refreshUser() {
+        try {
+            const r = await backendApi.getMe();
+            user.value = {
+                email: r.data.email,
+                display_name: r.data.display_name ?? null,
+                avatar_url: r.data.avatar_url ?? null,
+                balance: r.data.balance
+            };
+        } catch (e) {
+            // ignore, most likely unauthenticated
+        }
     }
 
     const authLogin = async (username: string, password: string) => {
@@ -44,6 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
             await marketStore.loadPortfolio();
             const email = decodeEmail(token.value as string);
             user.value = email ? { email } : null;
+            await refreshUser();
             router.push('/portfolio');
         } catch (err) {
             console.error('Login failed:', err);
@@ -74,6 +91,16 @@ export const useAuthStore = defineStore('auth', () => {
         });
         router.push('/auth');
     };
+    
+    const updateBalance = (newBalance: number, change?: 'increase' | 'decrease') => {
+        if (user.value) {
+            user.value.balance = newBalance;
+            lastBalanceChange.value = change ?? null;
+            setTimeout(() => {
+                if (lastBalanceChange.value === change) lastBalanceChange.value = null;
+            }, 800);
+        }
+    };
 
     return {
         user,
@@ -82,6 +109,9 @@ export const useAuthStore = defineStore('auth', () => {
         error,
         authLogin,
         authRegister,
-        logout
+        logout,
+        refreshUser,
+        lastBalanceChange,
+        updateBalance
     };
 });

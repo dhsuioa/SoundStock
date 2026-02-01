@@ -44,8 +44,8 @@ export const enrichTrackData = (track: LastFmTrack): EnrichedTrack => {
         artist: artistName,
         price: parseInt(track.playcount || track.listeners || '0'),
         volume: parseInt(track.listeners || '0'),
-        change24h: (Math.random() * 10 - 5).toFixed(2),
+        change24h: '0.00',
         image: imageUrl,
-        isPositive: Math.random() > 0.5
+        isPositive: true
     } as EnrichedTrack;
 };

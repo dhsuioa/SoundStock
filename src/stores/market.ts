@@ -7,11 +7,19 @@ import { enrichTrackData } from '../utils/marketSimulator'
 import { EnrichedTrack, LastFmTrack } from '../types'
 import { useAuthStore } from './auth'
 import router from '../router'
+import { useToastStore } from './toast'
 
 export const useMarketStore = defineStore('market', () => {
     const assets = ref<EnrichedTrack[]>([])
     const isLoading = ref(false)
     const error = ref<string | null>(null)
+    const isActionPending = ref(false)
+    const pendingKeys = ref<Set<string>>(new Set())
+    const keyFor = (track: EnrichedTrack) => `${track.artist}|||${track.name}`
+    const isPending = (track?: EnrichedTrack) => {
+        if (!track) return false
+        return pendingKeys.value.has(keyFor(track))
+    }
 
     const fetchMarket = async () => {
         isLoading.value = true
@@ -23,7 +31,7 @@ export const useMarketStore = defineStore('market', () => {
             // console.log('DEBUG: Top Tracks Raw:', rawTracks[0]);
 
             // Transform data with market simulator
-            assets.value = rawTracks.map(track => {
+            const enriched = rawTracks.map(track => {
                 const enriched = enrichTrackData(track);
                 // Apply cache immediately if available
                 const cachedImage = ImageCache.get(enriched.artist, enriched.name);
@@ -32,6 +40,24 @@ export const useMarketStore = defineStore('market', () => {
                 }
                 return enriched;
             })
+            // Try to override price/change with backend snapshot (real data)
+            try {
+                const snap = await backendApi.getMarketSnapshot();
+                const map = new Map<string, { price: number; change24h: number; is_positive: boolean }>();
+                (snap.data || []).forEach((item: any) => {
+                    map.set(`${item.artist_name}|||${item.track_name}`, { price: item.price, change24h: item.change24h, is_positive: item.is_positive });
+                });
+                for (const t of enriched) {
+                    const key = `${t.artist}|||${t.name}`;
+                    const s = map.get(key);
+                    if (s) {
+                        t.price = s.price;
+                        t.change24h = (s.change24h ?? 0).toFixed(2);
+                        t.isPositive = !!s.is_positive;
+                    }
+                }
+            } catch (ignore) {}
+            assets.value = enriched;
 
             // Progressive Image Loading
             fetchImagesForTopTracks()
@@ -126,20 +152,36 @@ export const useMarketStore = defineStore('market', () => {
             return;
         }
 
+        if (isPending(track)) return;
         if (!isInPortfolio(track)) {
+            pendingKeys.value.add(keyFor(track))
+            const toast = useToastStore()
             try {
                 await backendApi.addToPortfolio({
                     artist_name: track.artist,
                     track_name: track.name,
                     image_url: track.image,
-                    mbid: (track as any).mbid
+                    mbid: (track as any).mbid,
+                    current_price: Math.round(track.price || 0)
                 });
                 portfolio.value.push(track);
+                const currentBalance = authStore.user?.balance ?? 0;
+                authStore.updateBalance(currentBalance - Math.round(track.price || 0), 'decrease');
+                authStore.refreshUser().catch(() => {});
+                toast.show('Актив куплен', 'success')
             } catch (err: any) {
                 console.error('Failed to add to portfolio:', err);
+                if (err.response && err.response.status === 400 && err.response.data?.detail === 'Not enough funds') {
+                    const e = new Error('Недостаточно средств');
+                    (e as any).code = 'INSUFFICIENT_FUNDS';
+                    toast.show('Недостаточно средств', 'error')
+                    throw e;
+                }
                 if (err.response && err.response.status === 401) {
                     authStore.logout();
                 }
+            } finally {
+                pendingKeys.value.delete(keyFor(track))
             }
         }
     }
@@ -150,14 +192,23 @@ export const useMarketStore = defineStore('market', () => {
             return;
         }
 
+        if (isPending(track)) return;
+        pendingKeys.value.add(keyFor(track))
+        const toast = useToastStore()
         try {
-            await backendApi.removeFromPortfolio(track.name);
+            await backendApi.removeFromPortfolio(track.name, Math.round(track.price || 0));
             portfolio.value = portfolio.value.filter(t => t.name !== track.name || t.artist !== track.artist);
+            const currentBalance = authStore.user?.balance ?? 0;
+            authStore.updateBalance(currentBalance + Math.round(track.price || 0), 'increase');
+            authStore.refreshUser().catch(() => {});
+            toast.show('Актив продан', 'success')
         } catch (err: any) {
             console.error('Failed to remove from portfolio:', err);
              if (err.response && err.response.status === 401) {
                 authStore.logout();
             }
+        } finally {
+            pendingKeys.value.delete(keyFor(track))
         }
     }
 
@@ -171,6 +222,8 @@ export const useMarketStore = defineStore('market', () => {
         portfolioValue,
         isLoading,
         error,
+        isActionPending,
+        isPending,
         fetchMarket,
         loadPortfolio,
         addToPortfolio,

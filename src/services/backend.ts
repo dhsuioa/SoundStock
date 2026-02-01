@@ -32,11 +32,39 @@ export default {
         return backendApi.get('/portfolio');
     },
 
-    addToPortfolio(item: { artist_name: string; track_name: string; image_url?: string; mbid?: string }) {
+    addToPortfolio(item: { artist_name: string; track_name: string; image_url?: string; mbid?: string; current_price: number }) {
         return backendApi.post('/portfolio', item);
     },
 
-    removeFromPortfolio(trackName: string) {
-        return backendApi.delete(`/portfolio/${encodeURIComponent(trackName)}`);
+    removeFromPortfolio(trackName: string, currentPrice: number) {
+        return backendApi.delete(`/portfolio/${encodeURIComponent(trackName)}?current_price=${encodeURIComponent(currentPrice)}`);
+    }
+    ,
+    getMe() {
+        return backendApi.get('/me');
+    },
+    updateMe(payload: { display_name?: string; avatar_url?: string }) {
+        return backendApi.put('/me', payload);
+    },
+    changePassword(old_password: string, new_password: string) {
+        return backendApi.post('/me/password', { old_password, new_password });
+    },
+    deleteMe() {
+        return backendApi.delete('/me');
+    },
+    resetAccount() {
+        return backendApi.post('/me/reset');
+    },
+    getLeaderboard() {
+        return backendApi.get('/leaderboard');
+    },
+    getTrackHistory(artist: string, track: string) {
+        return backendApi.get(`/history/${encodeURIComponent(artist)}/${encodeURIComponent(track)}`);
+    },
+    getMarketSnapshot() {
+        return backendApi.get('/market/snapshot');
+    },
+    getTransactions(page: number = 1, size: number = 50) {
+        return backendApi.get('/transactions', { params: { page, size } });
     }
 };
