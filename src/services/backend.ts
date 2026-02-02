@@ -17,11 +17,15 @@ backendApi.interceptors.request.use(
 );
 
 export default {
-    login(username: string, password: string) {
+    login(email: string, password: string) {
         const formData = new URLSearchParams();
-        formData.append('username', username);
+        formData.append('username', email);
         formData.append('password', password);
-        return backendApi.post('/token', formData);
+        return backendApi.post('/token', formData, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
     },
 
     register(email: string, password: string) {
