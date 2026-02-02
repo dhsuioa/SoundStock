@@ -8,7 +8,8 @@ if not DATABASE_URL:
 
 SQLALCHEMY_ECHO = os.environ.get("SQLALCHEMY_ECHO", "false").lower() in ("1", "true", "yes", "on")
 
-engine = create_async_engine(DATABASE_URL, echo=SQLALCHEMY_ECHO)
+DB_URL_WITH_ASYNC_DRIVER = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+engine = create_async_engine(DB_URL_WITH_ASYNC_DRIVER, echo=SQLALCHEMY_ECHO)
 
 SessionLocal = sessionmaker(
     bind=engine,

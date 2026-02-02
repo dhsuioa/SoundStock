@@ -10,3 +10,4 @@ python-multipart
 argon2-cffi
 apscheduler
 httpx
+psycopg2-binary
