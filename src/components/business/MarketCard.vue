@@ -13,11 +13,6 @@ const router = useRouter()
 const changeClass = computed(() => props.asset.isPositive ? 'text-emerald-400' : 'text-rose-400')
 const changeSign = computed(() => props.asset.isPositive ? '+' : '')
 const divPerPayout = computed(() => Math.floor((props.asset.price || 0) * 0.01))
-const divPerDay = computed(() => Math.floor(divPerPayout.value * 144))
-const displayRank = computed(() => {
-  if (props.index !== undefined) return props.index + 1
-  return props.asset['@attr']?.rank
-})
 
 const goToTrack = (track: EnrichedTrack) => {
   const artistName = track.artist;

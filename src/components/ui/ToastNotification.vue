@@ -11,11 +11,6 @@ const classes = (type: 'success' | 'error' | 'info') => {
   return 'bg-slate-700/90 border-slate-600/50 shadow-slate-500/20'
 }
 
-const icon = (type: 'success' | 'error' | 'info') => {
-  if (type === 'success') return '✓'
-  if (type === 'error') return '!'
-  return 'i'
-}
 </script>
 
 <template>
@@ -64,4 +59,3 @@ const icon = (type: 'success' | 'error' | 'info') => {
     </div>
   </Teleport>
 </template>
-

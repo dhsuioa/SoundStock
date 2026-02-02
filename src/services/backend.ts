@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const backendApi = axios.create({
-    baseURL: 'http://localhost:8000',
+    baseURL: 'https://soundstock-api-2024.onrender.com.',
 });
 
 // Interceptor to add token to headers
